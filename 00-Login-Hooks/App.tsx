@@ -1,75 +1,56 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- * @flow strict-local
- */
-
-import React from 'react';
+import React, {useState} from 'react';
 import {Alert, Button, StyleSheet, Text, View} from 'react-native';
-import {useAuth0, Auth0Provider} from 'react-native-auth0';
-import config from './auth0-configuration';
+import AuthWebView from './components/AuthWebView';
 
-const Home = () => {
-  const {authorize, clearSession, user, getCredentials, error, isLoading} = useAuth0();
+const App = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [tokens, setTokens] = useState<{accessToken: string; idToken: string} | null>(null);
+  const [showWebView, setShowWebView] = useState(false);
 
-  const onLogin = async () => {
-    await authorize({}, {});
-    const credentials = await getCredentials();
-    Alert.alert('AccessToken: ' + credentials?.accessToken);
+  const handleLoginSuccess = (tokens: {accessToken: string; idToken: string}) => {
+    setTokens(tokens);
+    setIsLoggedIn(true);
+    setShowWebView(false);
+    Alert.alert('Logged in!', 'Access Token: ' + tokens.accessToken);
   };
 
-  const loggedIn = user !== undefined && user !== null;
-
-  const onLogout = async () => {
-    await clearSession({}, {});
+  const handleLogout = () => {
+    setTokens(null);
+    setIsLoggedIn(false);
   };
-
-
-  if (isLoading) {
-    return <View style={styles.container}><Text>Loading</Text></View>;
-  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}> Auth0Sample - Login </Text>
-      {user && <Text>You are logged in as {user.name}</Text>}
-      {!user && <Text>You are not logged in</Text>}
-      <Button
-        onPress={loggedIn ? onLogout : onLogin}
-        title={loggedIn ? 'Log Out' : 'Log In'}
-      />
-      {error && <Text style={styles.error}>{error.message}</Text>}
+      <Text style={styles.header}> Auth0Sample - Seamless Login </Text>
+      {showWebView ? (
+        <AuthWebView onSuccess={handleLoginSuccess} />
+      ) : (
+        <>
+          <Text>
+            {isLoggedIn ? 'You are logged in.' : 'You are not logged in.'}
+          </Text>
+          <Button
+            onPress={isLoggedIn ? handleLogout : () => setShowWebView(true)}
+            title={isLoggedIn ? 'Log Out' : 'Log In'}
+          />
+        </>
+      )}
     </View>
-  );
-};
-
-const App = () => {
-  return (
-    <Auth0Provider domain={config.domain} clientId={config.clientId}>
-      <Home />
-    </Auth0Provider>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5FCFF',
   },
   header: {
     fontSize: 20,
     textAlign: 'center',
     margin: 10,
   },
-  error: {
-    margin: 20,
-    textAlign: 'center',
-    color: '#D8000C'
-  }
 });
 
 export default App;
